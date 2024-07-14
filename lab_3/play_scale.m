@@ -13,7 +13,7 @@ for kk = 1:length(scale.keys)
     keynum = scale.keys(kk);
     
     tone = key2note(100, keynum, scale.durations(kk));
-    
+     
     n2 = n1 + length(tone) - 1;
     xx(n1:n2) = xx(n1:n2) + tone;
     
