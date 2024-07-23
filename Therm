@@ -1,0 +1,72 @@
+#include <msp430.h>
+
+// Function prototypes
+void initADC(void);
+void readTemperature(void);
+void lcd_display(const char *str);
+void lcd_display_int(int num);
+void initUnusedPorts(void);
+
+// Global variable to store temperature reading
+volatile int temperature;
+
+// Function to initialize the ADC to read the internal temperature sensor
+void initADC() {
+    ADC10CTL1 = INCH_10 + ADC10DIV_3; // Channel 10 (Temp Sensor), ADC10CLK/4
+    ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON + ADC10IE; // Vref+, 64 x ADC10CLKs, ADC10 on, interrupt enabled
+    __delay_cycles(1000); // Wait for ADC Ref to settle
+}
+
+// Function to read the temperature from the temperature sensor
+void readTemperature() {
+    ADC10CTL0 |= ENC + ADC10SC; // Sampling and conversion start
+    __bis_SR_register(CPUOFF + GIE); // Enter LPM0 with interrupts enabled, wait for ADC conversion
+}
+
+// ADC10 interrupt service routine
+#pragma vector=ADC10_VECTOR
+__interrupt void ADC10_ISR(void) {
+    temperature = ADC10MEM; // Read ADC value
+    __bic_SR_register_on_exit(CPUOFF); // Exit LPM0
+}
+
+// Dummy function to simulate LCD display (Replace with actual implementation)
+void lcd_display(const char *str) {
+    // Your code to display string on LCD
+}
+
+// Dummy function to simulate LCD display of integer (Replace with actual implementation)
+void lcd_display_int(int num) {
+    // Your code to display integer on LCD
+}
+
+// Function to initialize unused ports
+void initUnusedPorts() {
+    P1DIR = 0xFF; P1OUT = 0; // Set all P1 pins to output and low
+    P2DIR = 0xFF; P2OUT = 0; // Set all P2 pins to output and low
+}
+
+int main() {
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+
+    // Initialize unused ports
+    initUnusedPorts();
+
+    // Initialize the ADC
+    initADC();
+
+    while (1) {
+        readTemperature();
+        // Convert temperature value to Celsius
+        int tempC = ((long)temperature - 673) * 423 / 1024;
+        lcd_display("Temperature: ");
+        lcd_display_int(tempC);
+        lcd_display(" C");
+        
+        // Use timer for delay instead of __delay_cycles
+        TA0CCR0 = 1000; // Count limit (1 second delay, assuming 1 MHz clock)
+        TA0CTL = TASSEL_2 + MC_1; // SMCLK, up mode
+        while (!(TA0CCTL0 & CCIFG)); // Wait for timer to expire
+        TA0CCTL0 &= ~CCIFG; // Clear flag
+    }
+}
