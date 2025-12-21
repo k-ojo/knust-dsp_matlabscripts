@@ -4,6 +4,5 @@ function [xx, tt] = mychirp(f1, f2, dur, fsamp)
     %% assuming phi is 100 and amplitude of 1
     psi = 2*pi*(mu*tt.*tt + f1*tt + 100);
     xx = real( 1*exp(j*psi) );
-    
 end
     
